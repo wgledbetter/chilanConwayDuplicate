@@ -6,7 +6,7 @@ function c = h1(X)
   if isequal(s.problem, 'chilanConway')
     c = 0.5*norm(x)^2/2;
   elseif isequal(s.problem, '1dTargZone')
-    c = norm(x) < 2;
+    c = norm(x) < 2.5;
   end
 return
 

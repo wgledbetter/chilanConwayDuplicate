@@ -15,7 +15,7 @@ function main2
   dt = 0.01;
   
   nSamp = 750;
-  nEdge = 3;
+  nEdge = 4;
   
   maxIters = 1500;
   tol = 1e-4;
@@ -40,12 +40,12 @@ function main2
   for i = 1:nY
     Y(i,:) = scale.*Y(i,:) + shift;
   end
-%  prm = permn(linspace(0, 1, nEdge), dim-1);
+  prm = permn(linspace(0, 1, nEdge), dim-1);
   [nPrm, ~] = size(prm);
   for i = 1:nPrm
     endpoint = nan(dim-1,1);
     for n = 1:dim-1
-%      endpoint(n,1) = xBound(n, 1) + prm(i,n)*scale(i,n);
+      endpoint(n,1) = xBound(n, 1) + prm(i,n)*scale(n);
     end
     Y(end+1,:) = [endpoint; tBound(2)];
   end
@@ -72,7 +72,7 @@ function main2
     end
   end
   % Init domain = guess
-  VX = ones(nX, 1);
+  VX = 0.5*ones(nX, 1);
 %  const = mean(VY);
 %  VX = const*ones(nX,1);
 %  for i = 1:nX

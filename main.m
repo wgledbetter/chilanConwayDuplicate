@@ -3,6 +3,8 @@ function main
   
   
   %% Options
+  name = 'safezone';
+  
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
   mode = 'kruzkov_fixpt';
@@ -16,7 +18,7 @@ function main
 
   nSamp = 150;
   
-  maxIters = 500;
+  maxIters = 1000;
   tol = 1e-4;
   
   A = [];
@@ -52,9 +54,9 @@ function main
   VY = nan(nY,1);
   for i = 1:nY
     if contains(mode, 'kruzkov')
-      VY(i) = 1 - exp(-h(Y(i,:)));
+      VY(i) = 1 - exp(-h1(Y(i,:)));
     else
-      VY(i) = h(Y(i,:));
+      VY(i) = h1(Y(i,:));
     end
   end
   % Sample domain
@@ -69,7 +71,7 @@ function main
     end
   end
   % Init domain = guess
-  VX = ones(nX, 1);
+  VX = 0.5*ones(nX, 1);
 %  const = mean(VY);
 %  VX = const*ones(nX,1);
   for i = 1:nX
@@ -102,13 +104,13 @@ function main
       gradRbf = dRbf(X(i,:), W, [X;Y]);
       if isequal(mode, 'kruzkov_newton')
         value = rbf(X(i,:)', W, [X;Y]);
-        minfun = @(u) g(X(i,:), u) + dot(gradRbf(1:end-1), f(X(i,:), u))...
+        minfun = @(u) g1(X(i,:), u) + dot(gradRbf(1:end-1), f1(X(i,:), u))...
           - (g(X(i,:), u) - 1)*value;
       elseif isequal(mode, 'kruzkov_fixpt')
         X_delta = @(u) X(i,:)' + dt*[f1(X(i,:), u); 1];
         nonlcon = @(u) boundary_nonlcon(X_delta(u), bound);
         minfun = @(u) rbf(X_delta(u), W, [X;Y])...
-          + dt*g(X(i,:), u)*(1 - VX(i));
+          + dt*g1(X(i,:), u)*(1 - VX(i));
       elseif isequal(mode, 'raw_fixpt')
         X_delta = @(u) X(i,:)' + dt*[f1(X(i,:), u); 1];
         nonlcon = @(u) boundary_nonlcon(X_delta(u), bound);
@@ -153,6 +155,8 @@ function main
     end
     storeTarg(iters) = targ;
   end
+  
+  save(strcat(name, '_', mode));
   
   plotValfun();
   breakp=1;
