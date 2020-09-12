@@ -3,7 +3,7 @@ function main
   
   
   %% Options
-  name = 'safezone';
+  name = 'chicon';
   
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
@@ -11,7 +11,7 @@ function main
   opts = optimoptions('fmincon', 'Display', 'off');
   
   %% Settings
-  xBound = [0, 4];
+  xBound = [-2, 2];
   tBound = [0, 4];
   uBound = [-1, 1];
   dt = 0.01;
