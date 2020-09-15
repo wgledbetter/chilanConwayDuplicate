@@ -7,6 +7,8 @@ function c = h1(X)
     c = 0.5*norm(x)^2/2;
   elseif isequal(s.problem, '1dTargZone')
     c = norm(x) < 2.5;
+  elseif isequal(s.problem, 'fancy')
+    c = x + 2*sin(4*x);
   end
 return
 

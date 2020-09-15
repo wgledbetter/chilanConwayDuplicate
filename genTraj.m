@@ -2,10 +2,11 @@ function genTraj(fname)
   %%% Generate trajectories from the value function saved in 'fname.mat'
   
   %% Settings
-  nDisc = 3;
+  nDisc = 5;
+  nCtrl = 3;
   
   % optimize OR discretize
-  trajMode = 'optimize';
+  trajMode = 'discretize';
   
   intgOpts = odeset('RelTol', 1e-8, 'AbsTol', 1e-8);
   
@@ -48,14 +49,23 @@ function genTraj(fname)
   %% Integrate trajectories
   if isequal(trajMode, 'discretize')
     % Create control discretization
-    controlOpts = nan(69, 420);
+    [uDim, ~] = size(uBound);
+    prm = permn(linspace(0, 1, nCtrl), uDim);
+    nC = nCtrl^uDim;
+    uScale = (uBound(:,2) - uBound(:,1))';
+    controlOpts = nan(nC, uDim);
+    for i = 1:nC
+      for j = 1:uDim
+        controlOpts(i,j) = uBound(j,1) + prm(i,j)*uScale(j);
+      end
+    end
     dydt = @(t,y) dydt_disc(t,y);
   else
     dydt = @(t,y) dydt_opt(t,y);
   end
   
   paths = cell(nIC,1);
-  for i = 1:nIC
+  parfor i = 1:nIC
 %    [t, traj] = ode45(dydt, [X0(i,end), tMax], X0(i,1:end-1));%, intgOpts);
     [t, traj, ~] = dopri(dydt, [X0(i,end), tMax], tStep, X0(i,1:end-1), 1e-12);
     paths{i} = [traj, t];
@@ -117,7 +127,24 @@ return
 
   % Dynamics using discretization selection
   function yD = dydt_disc(t,y)
+    gVal = dRbf([y, t], W, [X;Y]);
+    opFun = @(u) -dot(f1([y; t], u), -gVal(1:end-1));
+    X_delta = @(u) y' + dt*[f1([y;t], u)];
+    nonlcon = @(u) boundary_nonlcon(X_delta(u), xBound);
     
+    opCase = nan(nC, 1);
+    for k = 1:nC
+      uk = controlOpts(k,:);
+      if any(nonlcon(uk) > 0)
+        opCase(k) = Inf;
+      else
+        opCase(k) = opFun(uk);
+      end
+    end
+    [~, kStar] = min(opCase);
+    uStar = controlOpts(kStar,:);
+    
+    yD = f1([y; t], uStar);
   end
 
 end

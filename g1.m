@@ -7,6 +7,8 @@ function c = g1(X, u)
     c = norm(u)^2/2;
   elseif isequal(s.problem, '1dTargZone')
     c = 0;
+  elseif isequal(s.problem, 'fancy')
+    c = -x*t/12;
   end
 return
 

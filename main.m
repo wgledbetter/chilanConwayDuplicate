@@ -3,20 +3,20 @@ function main
   
   
   %% Options
-  name = 'chicon';
+  name = 'fancy2';
   
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
-  mode = 'kruzkov_fixpt';
+  mode = 'raw_fixpt';
   opts = optimoptions('fmincon', 'Display', 'off');
   
   %% Settings
-  xBound = [-2, 2];
-  tBound = [0, 4];
+  xBound = [-3, 3];
+  tBound = [0, 6];
   uBound = [-1, 1];
   dt = 0.01;
 
-  nSamp = 150;
+  nSamp = 400;
   
   maxIters = 1000;
   tol = 1e-4;
@@ -70,6 +70,15 @@ function main
       end
     end
   end
+  % Initial surface
+  for i = 1:nEnd
+    endpoint = nan(dim-1,1);
+    for n = 1:dim-1
+      endpoint(n,1) = xBound(n, prm(i,n));
+    end
+    X(end+1,:) = [endpoint; tBound(1)];
+  end
+  nX = nX + nEnd;
   % Init domain = guess
   VX = 0.5*ones(nX, 1);
 %  const = mean(VY);
@@ -114,7 +123,7 @@ function main
       elseif isequal(mode, 'raw_fixpt')
         X_delta = @(u) X(i,:)' + dt*[f1(X(i,:), u); 1];
         nonlcon = @(u) boundary_nonlcon(X_delta(u), bound);
-        minfun = @(u) rbf(X_delta(u), W, [X;Y]) + dt*g(X(i,:), u);
+        minfun = @(u) rbf(X_delta(u), W, [X;Y]) + dt*g1(X(i,:), u);
       else
         minfun = @(u) g(X(i,:), u) + dot(gradRbf(1:end-1), f(X(i,:), u));
       end
