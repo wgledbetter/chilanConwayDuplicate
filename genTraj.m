@@ -2,7 +2,7 @@ function genTraj(fname)
   %%% Generate trajectories from the value function saved in 'fname.mat'
   
   %% Settings
-  nDisc = 5;
+  nDisc = 6;
   nCtrl = 3;
   
   % optimize OR discretize

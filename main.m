@@ -3,11 +3,13 @@ function main
   
   
   %% Options
-  name = 'fancy2';
+  name = 'timeValTest';
   
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
   mode = 'raw_fixpt';
+  % special considerations for scenarios with minimum-time-to-capture-type objectives
+  objType = 'time';
   opts = optimoptions('fmincon', 'Display', 'off');
   
   %% Settings
@@ -16,7 +18,7 @@ function main
   uBound = [-1, 1];
   dt = 0.01;
 
-  nSamp = 400;
+  nSamp = 200;
   
   maxIters = 1000;
   tol = 1e-4;
@@ -33,6 +35,7 @@ function main
   scale = (bound(:,2) - bound(:,1))';
   shift = bound(:,1)';
   [dim, ~] = size(bound);
+
   % Sample terminal surface
   nY = ceil(sqrt(nSamp));
   Y = lhsdesign(nY, dim-1);
@@ -50,6 +53,21 @@ function main
     Y(end+1,:) = [endpoint; tBound(2)];
   end
   nY = nY + nEnd;
+  if isequal(objType, 'time')
+    nTs = ceil(sqrt(nSamp)/2);
+    tSamp = linspace(tBound(1), tBound(2), nTs);
+    for i = 1:nY
+      if h1(Y(i,:)) == 0
+        % If y_i is in the target region, its value is known for all t
+        yAdd = nan(nTs-1, dim);
+        for m = 1:nTs-1
+          yAdd(m,:) = [Y(i,1:end-1), tSamp(m)];
+        end
+        Y = [Y; yAdd];
+      end
+    end
+  end
+  [nY, ~] = size(Y);
   % Eval terminal surface
   VY = nan(nY,1);
   for i = 1:nY
@@ -59,14 +77,24 @@ function main
       VY(i) = h1(Y(i,:));
     end
   end
+
   % Sample domain
   nX = nSamp - nY;
   X = lhsdesign(nX, dim);
-  for i = 1:nX
+  i = 0;
+  while i < nX
+    i = i + 1;
     X(i,:) = scale.*X(i,:) + shift;
     if contains(mode, 'fixpt')
       if tBound(2) - X(i,end) < dt
         X(i,end) = tBound(2) - dt;
+      end
+    end
+    if isequal(objType, 'time')
+      if h1(X(i,:)) == 0
+        % If x is in the target zone, reject and resample
+        X(i,:) = rand(1,dim);
+        i = i - 1;
       end
     end
   end
@@ -79,12 +107,13 @@ function main
     X(end+1,:) = [endpoint; tBound(1)];
   end
   nX = nX + nEnd;
-  % Init domain = guess
-  VX = 0.5*ones(nX, 1);
-%  const = mean(VY);
-%  VX = const*ones(nX,1);
-  for i = 1:nX
-    VX(i) = interp1(Y(:,1), VY, X(i,1));
+  % Init domain = guess  
+  if isequal(objType, 'time')
+    VX = 0.5*ones(nX, 1);
+  else
+    for i = 1:nX
+      VX(i) = interp1(Y(:,1), VY, X(i,1));
+    end
   end
   
   avgCtrl = (uBound(:,2) + uBound(:,1))/2;

@@ -9,6 +9,8 @@ function c = g1(X, u)
     c = 0;
   elseif isequal(s.problem, 'fancy')
     c = -x*t/12;
+  elseif isequal(s.problem, 'targZoneTimeCost')
+    c = 1;
   end
 return
 

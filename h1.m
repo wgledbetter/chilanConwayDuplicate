@@ -9,6 +9,8 @@ function c = h1(X)
     c = norm(x) < 2.5;
   elseif isequal(s.problem, 'fancy')
     c = x + 2*sin(4*x);
+  elseif isequal(s.problem, 'targZoneTimeCost')
+    c = (x < -1) || (x > 1);
   end
 return
 
