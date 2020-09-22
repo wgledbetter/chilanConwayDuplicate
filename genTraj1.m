@@ -1,4 +1,4 @@
-function genTraj(fname)
+function genTraj1(fname)
   %%% Generate trajectories from the value function saved in 'fname.mat'
   
   %% Settings
