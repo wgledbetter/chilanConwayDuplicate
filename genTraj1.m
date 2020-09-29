@@ -24,13 +24,31 @@ function genTraj1(fname)
   %% Process
   tMax = Y(1,end);
   scale = (xBound(:,2) - xBound(:,1))';
+  XY = [X; Y];
+  VXY = [VX; VY];
   
   %% Generate Interp
   if contains(mode, 'kruzkov')
-    VX = -log(1-VX);
-    VY = -log(1-VY);
+    VXY = -log(1-VXY);
   end
-  [W, ~] = genrbf([X; Y], [VX; VY]);
+  [W, ~] = genrbf(XY, VXY);
+  
+  %% Generate Control Function
+  [nV,~] = size(XY);
+  [nCtrl,~] = size(uBound);
+  opCtrl = nan(nV, nCtrl);
+  for i = 1:nV
+    xy = XY(i,:);
+    grd = dRbf(xy, W, XY);
+    minfun = @(u) -dot(f1(xy, u), -grd(1:end-1));
+    X_delt = @(u) xy(1:end-1)' + dt*f1(xy, u);
+    noncon = @(u) boundary_nonlcon(X_delt(u), xBound);
+
+    [uOpt, ~] = fmincon(minfun, avgCtrl, A, b, Aeq, beq, uBound(:,1), uBound(:,2), noncon, optOpts);
+
+    opCtrl(i,:) = uOpt;
+  end
+  [WCtrl, ~] = genrbf(XY, opCtrl);
   
   %% Generate ICs
   nIC = nDisc^dim;
@@ -64,6 +82,8 @@ function genTraj1(fname)
     dydt = @(t,y) dydt_opt(t,y);
   end
   
+  dydt = @(t,y) dydt_func(t,y);
+  
   paths = cell(nIC,1);
   parfor i = 1:nIC
 %    [t, traj] = ode45(dydt, [X0(i,end), tMax], X0(i,1:end-1));%, intgOpts);
@@ -76,9 +96,11 @@ function genTraj1(fname)
   tPlot = linspace(0, tMax, nP);
   [XP, TP] = meshgrid(xPlot, tPlot);
   VP = nan(nP, nP);
+  CP = nan(nP, nP);
   for i = 1:nP
     for j = 1:nP
-      VP(i,j) = rbf([XP(i,j); TP(i,j)], W, [X;Y]);
+      VP(i,j) = rbf([XP(i,j); TP(i,j)], W, XY);
+      CP(i,j) = rbf([XP(i,j); TP(i,j)], WCtrl, XY);
     end
   end
   VT = cell(nIC,1);
@@ -87,7 +109,7 @@ function genTraj1(fname)
     [nT, ~] = size(pth);
     val = nan(nT, 1);
     for j = 1:nT
-      val(j) = rbf(pth(j,:)', W, [X;Y]);
+      val(j) = rbf(pth(j,:)', W, XY);
     end
     VT{i} = val;
   end
@@ -107,6 +129,15 @@ function genTraj1(fname)
   ylabel('t')
   zlabel('val')
   hold off;
+  
+  figure();
+  hold on;
+  grid on;
+  mesh(XP, TP, CP);
+  xlabel('x')
+  ylabel('t')
+  zlabel('val')
+  hold off;
 
   breakp=1;
   
@@ -115,9 +146,9 @@ return
 %% Functions
   % Dynamics using full optimization
   function yD = dydt_opt(t,y)
-    gVal = dRbf([y, t], W, [X;Y]);
+    gVal = dRbf([y, t], W, XY);
     opFun = @(u) -dot(f1([y; t], u), -gVal(1:end-1));
-    X_delta = @(u) y' + dt*[f1([y;t], u)];
+    X_delta = @(u) y' + dt*f1([y;t], u);
     nonlcon = @(u) boundary_nonlcon(X_delta(u), xBound);
     
     [uStar, ~] = fmincon(opFun, avgCtrl, A, b, Aeq, beq, uBound(:,1), uBound(:,2), nonlcon, optOpts);
@@ -127,9 +158,9 @@ return
 
   % Dynamics using discretization selection
   function yD = dydt_disc(t,y)
-    gVal = dRbf([y, t], W, [X;Y]);
+    gVal = dRbf([y, t], W, XY);
     opFun = @(u) -dot(f1([y; t], u), -gVal(1:end-1));
-    X_delta = @(u) y' + dt*[f1([y;t], u)];
+    X_delta = @(u) y' + dt*f1([y;t], u);
     nonlcon = @(u) boundary_nonlcon(X_delta(u), xBound);
     
     opCase = nan(nC, 1);
@@ -145,6 +176,22 @@ return
     uStar = controlOpts(kStar,:);
     
     yD = f1([y; t], uStar);
+  end
+
+  % Dynamics using interpolated control function
+  function yD = dydt_func(t,y)
+    X_delta = @(u) y' + dt*f1([y;t], u);
+    nonlcon = @(u) boundary_nonlcon(X_delta(u), xBound);
+    
+    ctrl = rbf([y;t], WCtrl, XY);
+    
+    if any(nonlcon(ctrl) > 0)
+      ctrl = avgCtrl;
+    end
+    ctrl = max(ctrl, uBound(:,1));
+    ctrl = min(ctrl, uBound(:,2));
+    
+    yD = f1([y;t], ctrl);
   end
 
 end

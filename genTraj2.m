@@ -2,8 +2,7 @@ function genTraj2(fname)
   %%% Generate DG trajectories in N dimensions from the value function in 'fname.mat'
   
   %% Settings
-  nDisc = 5;
-  nCtrl = NaN;
+  nDisc = 4;
   
   % optimize OR discretize
   trajMode = 'optimize';
@@ -29,6 +28,9 @@ function genTraj2(fname)
   if contains(mode, 'kruzkov')
     VX = -log(1-VX);
     VY = -log(1-VY);
+    
+    VX(isinf(VX)) = 1000;
+    VY(isinf(VY)) = 1000;
   end
   [W, ~] = genrbf([X; Y], [VX; VY]);
   
@@ -52,10 +54,12 @@ function genTraj2(fname)
   end
   
   paths = cell(nIC, 1);
-  for i = 1:nIC
+  parfor i = 1:nIC
     [t, traj, ~] = dopri(dydt, [X0(i,end), tMax], tStep, X0(i,1:end-1), 1e-12);
     paths{i} = [traj, t];
   end
+  
+  breakp=1;
   
   %% DBC SPECIFIC PLOTTING
   VT = cell(nIC,1);
