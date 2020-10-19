@@ -72,8 +72,23 @@ function testRBF
   
   % Calculate gradients at random point
   x = rand(1,dimX);
+  y = seedFun(x);
+  gradY = rbfDy(x, P, X);
   gradX = dRbf(x, W, X);
   gradXdY = dRbfDy(x, P, X);
+  
+  % Plot
+  [mx, iMx] = max(gradY);
+  [mn, iMn] = min(gradY);
+  figure();
+  hold on;
+  grid on;
+  plot(X,Y,'.b');
+  plot(x,y,'xk');
+  plot(X(iMx),Y(iMx),'r*');
+  plot(X(iMn),Y(iMn),'g*');
+  hold off;
+  
   
   breakp=1;
   

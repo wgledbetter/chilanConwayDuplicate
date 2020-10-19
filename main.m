@@ -7,9 +7,10 @@ function main
   
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
-  mode = 'raw_fixpt';
+  mode = 'raw_newton';
   % special considerations for scenarios with minimum-time-to-capture-type objectives
-  objType = 'time';
+  s = mySettings();
+  objType = s.objType;
   opts = optimoptions('fmincon', 'Display', 'off');
   
   %% Settings
@@ -112,7 +113,7 @@ function main
     VX = 0.5*ones(nX, 1);
   else
     for i = 1:nX
-      VX(i) = interp1(Y(:,1), VY, X(i,1));
+      VX(i,:) = interp1(Y(:,1), VY, X(i,1));
     end
   end
   
@@ -133,12 +134,12 @@ function main
     % Solve for RBF weights
     [W, P] = genrbf([X; Y], [VX; VY]);
     if iters == 1 || plotAllIters
-      plotValfun();
+      %plotValfun();
     end
     % Calculate HJB constraints and derivatives wrt domain function values
     H = nan(nX,1);
     H_p = nan(nX,nX); 
-    parfor i = 1:nX
+    for i = 1:nX
       gradRbf = dRbf(X(i,:), W, [X;Y]);
       if isequal(mode, 'kruzkov_newton')
         value = rbf(X(i,:)', W, [X;Y]);
@@ -153,8 +154,8 @@ function main
         X_delta = @(u) X(i,:)' + dt*[f1(X(i,:), u); 1];
         nonlcon = @(u) boundary_nonlcon(X_delta(u), bound);
         minfun = @(u) rbf(X_delta(u), W, [X;Y]) + dt*g1(X(i,:), u);
-      else
-        minfun = @(u) g(X(i,:), u) + dot(gradRbf(1:end-1), f(X(i,:), u));
+      else  % Raw Newton
+        minfun = @(u) g1(X(i,:), u) + dot(gradRbf(1:end-1), f1(X(i,:), u));
       end
       
       [uStar, minVal] = fmincon(minfun, avgCtrl, A, b, Aeq, beq, uBound(:,1), uBound(:,2), nonlcon, opts);
