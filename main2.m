@@ -3,21 +3,22 @@ function main2
   
   %% Options
   % raw OR kruzkov
-  mode = 'kruzkov';
+  mode = 'raw';
   % time OR nothing
-  objType = 'time';
+  objType = '';
   opts = optimoptions('fmincon', 'Display', 'off');
   
   %% Settings
-  xBound = [0, 4;
-            1, 4];
-  tBound = [0, 7];
-  uBound = [-2*pi, 2*pi];  % Minimizer Control
+  xBound = [-10, 10;
+            -10, 10];
+  tBound = [0, 10];
+  %uBound = [-2*pi, 2*pi];  % Minimizer Control
+  uBound = [-1, 1];
   vBound = [-1, 1];  % Maximizer Control
   dt = 0.01;
   
   nSamp = 750;
-  nEdge = 4;  % >= 2
+  nEdge = 5;  % >= 2
   
   maxIters = 1500;
   tol = 1e-4;
@@ -112,9 +113,10 @@ function main2
   if isequal(objType, 'time')
     VX = 0.5*ones(nX, 1);
   else
-    for i = 1:nX
-      VX(i) = interpn(Y(:,1), Y(:,2), VY, X(i,1), X(i,2));
-    end
+%     for i = 1:nX
+%       VX(i) = interpn(Y(:,1), Y(:,2), VY, X(i,1), X(i,2));
+%     end
+  VX = mean(VY)*ones(nX, 1);
   end
   
   avgMinCtrl = (uBound(:,2) + uBound(:,1))/2;
@@ -149,6 +151,8 @@ function main2
       
       [uStar, ~] = fmincon(minfun, avgMinCtrl, A, b, Aeq, beq, uBound(:,1), uBound(:,2), nonlconU, opts);
       [vStar, ~] = fmincon(maxfun, avgMaxCtrl, A, b, Aeq, beq, vBound(:,1), vBound(:,2), nonlconV, opts);
+      
+      breakp=1;
 
       if isequal(mode, 'kruzkov')
         nextVX(i) = max(min(fullfun(uStar,vStar), 1), 0);
