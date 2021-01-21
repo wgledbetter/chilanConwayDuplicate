@@ -7,7 +7,7 @@ function main
   
   plotAllIters = false;
   % raw_newton, raw_fixpt, kruzkov_newton, OR kruzkov_fixpt
-  mode = 'raw_newton';
+  mode = 'raw_fixpt';
   % special considerations for scenarios with minimum-time-to-capture-type objectives
   s = mySettings();
   objType = s.objType;

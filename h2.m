@@ -6,5 +6,5 @@ function c = h2(X)
   % c = (x(1) ~= 0);  % Incur cost if x1 not zero
   
   %% 1D Simple
-  c = norm(x(1) - x(2));
+  c = (x(1) - x(2))^2;
 end
