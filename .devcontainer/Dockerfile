@@ -22,4 +22,4 @@ RUN if [ "${INSTALL_NODE}" = "true" ]; then su vscode -c "umask 0002 && . /usr/l
 # RUN su vscode -c "source /usr/local/share/nvm/nvm.sh && npm install -g <your-package-here>" 2>&1
 
 # Direct pip install
-RUN pip3 --disable-pip-version-check --no-cache-dir install numpy jupyter scipy geostatspy black pandas matplotlib numba statsmodels
+RUN pip3 --disable-pip-version-check --no-cache-dir install numpy jupyter scipy geostatspy black pandas matplotlib numba statsmodels plotly orca psutil kaleido

@@ -109,14 +109,13 @@ def convert_type(it):
         return 3
 
 
-def f_make_krige(
-    nug, it1, azi, hmaj1, hmin1, x1, y1, v1, x2, y2, v2, x3, y3, v3, xq, yq
-):  # function to take parameters, make sample and plot
+def f_make_krige(nug, it1, azi, hmaj1, hmin1, xs, ys, vs, xqs, yqs):
+    # function to take parameters, make sample and plot
 
     it1 = convert_type(it1)
     nst = 1
-    xlag = 10
-    nlag = int(hmaj1 / xlag)
+    # xlag = 10
+    # nlag = int(hmaj1 / xlag)
     c1 = 1.0 - nug
     vario = GSLIB.make_variogram(
         nug, nst, it1, c1, azi, hmaj1, hmin1
@@ -128,16 +127,19 @@ def f_make_krige(
     #     nlag, xlag, azi + 90.0, vario
     # )  # project the model in the minor azimuth
 
-    x = [x1, x2, x3]
-    y = [y1, y2, y3]
-    value = [v1, v2, v3]
+    # x = [x1, x2, x3]
+    x = [xp for xp in xs]
+    # y = [y1, y2, y3]
+    y = [yp for yp in ys]
+    # value = [v1, v2, v3]
+    value = [vp for vp in vs]
     skm = np.mean(value)
     df = pd.DataFrame({"X": x, "Y": y, "Value": value})
 
-    xl = [xq, 0, 1]
-    yl = [yq, 0, 1]
-    value1 = [0, 0, 0]
-    dfl = pd.DataFrame({"X": xl, "Y": yl, "Value": value1})
+    # xl = [xq]  # , 0, 1]
+    # yl = [yq]  # , 0, 1]
+    value1 = [0 for _ in xqs]  # , 0, 0]
+    dfl = pd.DataFrame({"X": xqs, "Y": yqs, "Value": value1})
 
     sk_est, sk_var, sk_weights = simple_simple_krige(
         df, "X", "Y", "Value", dfl, "X", "Y", vario, skmean=skm
